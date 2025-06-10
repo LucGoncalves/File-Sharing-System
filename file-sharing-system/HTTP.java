@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 class HTTP {
 	static private final String HTTP_VERSION = "HTTP/1.0";
@@ -10,17 +11,24 @@ class HTTP {
 		byte[] line = new byte[300];
 		int p = 0;
 		try {
-			for (;;) {
-				sIn.read(line, p, 1);
-				if (line[p] == '\n')
+			while (true) {
+				int bytesRead = sIn.read(line, p, 1);
+				if (bytesRead == -1) {
+					return null; // Conexão foi fechada
+				}
+				if (line[p] == '\n') {
 					return (new String(line, 0, p));
-				else if (line[p] != '\r')
+				} else if (line[p] != '\r') {
 					p++;
+					if (p >= line.length) {
+						return null; // Linha muito longa
+					}
+				}
 			}
 		} catch (IOException ex) {
-			System.out.println("READ IOException");
+			System.out.println("READ IOException: " + ex.getMessage());
+			return null;
 		}
-		return (null);
 	}
 
 	static void writeLineCRLF(DataOutputStream sOut, String line) {
@@ -130,8 +138,10 @@ class HTTP {
 		if (filesList != null) {
 			for (File f : filesList) {
 				if (f.isFile()) {
+					String encodedName = URLEncoder.encode(f.getName(), StandardCharsets.UTF_8)
+							.replace("+", "%20");
 					items.append("<li>")
-							.append("<a class=\"file-link\" href=\"/").append(f.getName()).append("\">")
+							.append("<a class=\"file-link\" href=\"/files/").append(encodedName).append("\">")
 							.append(f.getName()).append("</a>")
 							.append("<span class=\"file-size\"> (")
 							.append(formatFileSize(f.length()))

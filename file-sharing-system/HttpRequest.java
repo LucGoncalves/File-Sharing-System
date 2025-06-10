@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.net.URLDecoder;
 
 class HttpRequest implements Runnable {
 	private Socket s;
@@ -35,17 +37,31 @@ class HttpRequest implements Runnable {
 	}
 
 	void processGet(String req) {
-		String line, fileName, filePath;
+		try {
+			// Ler cabeçalhos
+			String line;
+			do {
+				line = HTTP.readLineCRLF(sIn);
+				if (line == null)
+					return;
+			} while (line.length() > 0);
 
-		do {
-			line = HTTP.readLineCRLF(sIn);
-		} while (line.length() > 0);
+			String fileName = req.split(" ")[1];
+			if (fileName.equals("/")) {
+				fileName = "/index.html";
+			}
 
-		fileName = req.split(" ")[1];
-		if (fileName.compareTo("/") == 0)
-			fileName = "/index.html";
-		filePath = baseFolder + fileName;
-		HTTP.sendHttpFileResponse(sOut, null, filePath);
+			// Decodificar URL (para lidar com caracteres especiais)
+			fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
+
+			String filePath = baseFolder + fileName;
+			HTTP.sendHttpFileResponse(sOut, null, filePath);
+
+		} catch (Exception ex) {
+			System.out.println("Error in processGet: " + ex.getMessage());
+			HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
+					"<html><body><h1>404 File not found</h1></body></html>");
+		}
 	}
 
 	void processPostUpload() {
@@ -56,7 +72,7 @@ class HttpRequest implements Runnable {
 		FileOutputStream fOut;
 		byte[] data = new byte[300];
 
-		String uploadDirPath = "/files";
+		String uploadDirPath = baseFolder + "/files";
 		File uploadDir = new File(uploadDirPath);
 		if (!uploadDir.exists()) {
 			uploadDir.mkdirs(); // cria a pasta se não existir
@@ -144,7 +160,7 @@ class HttpRequest implements Runnable {
 
 	void replyPostList() {
 		String template = HTTP.readHtmlFile(baseFolder + "/file-list.html");
-		File uploadDir = new File("/files");
+		File uploadDir = new File(baseFolder + "/files");
 		String fileListItems = HTTP.generateFileListItems(uploadDir);
 		String response = template.replace("${file_list_items}", fileListItems);
 		HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
