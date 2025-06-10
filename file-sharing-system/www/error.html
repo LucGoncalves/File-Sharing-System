@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Error</title>
+		<style>
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f0f2f5;
+				color: #333;
+				line-height: 1.6;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+			}
+
+			header {
+				background-color: #0077cc;
+				color: white;
+				padding: 20px 0;
+				text-align: center;
+				height: 80px;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
+
+			header h1 {
+				margin: 0;
+				font-size: 24px;
+				color: white;
+			}
+
+			.container {
+				max-width: 600px;
+				margin: 30px auto;
+				background: white;
+				padding: 30px;
+				border-radius: 10px;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+				text-align: center;
+			}
+
+			h1 {
+				color: #d9534f;
+			}
+
+			.error-icon {
+				font-size: 60px;
+				color: #d9534f;
+				margin-bottom: 20px;
+			}
+
+			.back-button {
+				display: inline-block;
+				margin-top: 20px;
+				padding: 10px 20px;
+				background-color: #0077cc;
+				color: white;
+				border: none;
+				border-radius: 5px;
+				cursor: pointer;
+				font-weight: bold;
+				text-decoration: none;
+			}
+
+			.back-button:hover {
+				background-color: #005fa3;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>File Sharing System</h1>
+		</header>
+
+		<div class="container">
+			<div class="error-icon">✗</div>
+			<h1>Error Processing Request</h1>
+			<p>${error_message}</p>
+			<a href="/" class="back-button">Back to Home</a>
+		</div>
+	</body>
+</html>

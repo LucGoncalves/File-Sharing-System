@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Uploaded Files</title>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f0f2f5;
+				color: #333;
+				line-height: 1.6;
+			}
+
+			header {
+				background-color: #0077cc;
+				color: white;
+				padding: 20px 0;
+				text-align: center;
+				height: 80px;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
+
+			header h1 {
+				margin: 0;
+				font-size: 24px;
+				color: white;
+			}
+
+			.container {
+				max-width: 800px;
+				margin: 30px auto;
+				background: white;
+				padding: 30px;
+				border-radius: 10px;
+				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+			}
+
+			h1 {
+				font-size: 24px;
+				margin-bottom: 30px;
+				color: #0077cc;
+				text-align: center;
+			}
+
+			.file-list {
+				list-style-type: none;
+				padding: 0;
+				max-width: 700px;
+				margin: 0 auto;
+			}
+
+			.file-list li {
+				padding: 12px 15px;
+				border-bottom: 1px solid #eee;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.file-list li:last-child {
+				border-bottom: none;
+			}
+
+			.file-list li:hover {
+				background-color: #f9f9f9;
+			}
+
+			.file-link {
+				color: #0077cc;
+				text-decoration: none;
+				font-weight: bold;
+			}
+
+			.file-link:hover {
+				text-decoration: underline;
+			}
+
+			.file-size {
+				color: #666;
+				font-size: 0.9em;
+			}
+
+			.back-button {
+				display: inline-block;
+				margin-top: 20px;
+				padding: 10px 20px;
+				background-color: #0077cc;
+				color: white;
+				border: none;
+				border-radius: 5px;
+				cursor: pointer;
+				font-weight: bold;
+				text-decoration: none;
+			}
+
+			.back-button:hover {
+				background-color: #005fa3;
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>File Sharing System</h1>
+		</header>
+
+		<div class="container">
+			<h1>Uploaded Files</h1>
+
+			<ul class="file-list">
+				${file_list_items}
+			</ul>
+
+			<div style="text-align: center">
+				<a href="/" class="back-button">Back to Home</a>
+			</div>
+		</div>
+	</body>
+</html>
