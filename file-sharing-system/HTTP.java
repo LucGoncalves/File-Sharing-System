@@ -149,4 +149,9 @@ class HTTP {
 		return String.format("%.1f %sB", size / Math.pow(1024, exp), pre);
 	}
 
+	static int countFilesInDirectory(File directory) {
+		File[] files = directory.listFiles();
+		return files != null ? files.length : 0;
+	}
+
 }

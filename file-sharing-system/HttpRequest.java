@@ -104,8 +104,15 @@ class HttpRequest implements Runnable {
 			String validPassword = config.getProperty("auth.password");
 
 			if (username.equals(validUsername) && password.equals(validPassword)) {
-				// Successful login - send main page
-				HTTP.sendHttpFileResponse(sOut, "200 Ok", WEB_ROOT + "/home.html");
+				// Successful login - send main page with file count
+				File uploadDir = new File(UPLOAD_DIR);
+				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
+				int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+				String fileCount = currentFiles + "/" + maxFiles;
+
+				String template = HTTP.readHtmlFile(WEB_ROOT + "/home.html");
+				String response = template.replace("${file_count}", fileCount);
+				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 			} else {
 				// Failed login - show error
 				String template = HTTP.readHtmlFile(WEB_ROOT + "/index.html");
@@ -138,6 +145,16 @@ class HttpRequest implements Runnable {
 				String response = template.replace("${error_message}", "");
 				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 				return;
+			} else if (fileName.equals("/home.html")) {
+				File uploadDir = new File(UPLOAD_DIR);
+				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
+				int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+				String fileCount = currentFiles + "/" + maxFiles;
+
+				String template = HTTP.readHtmlFile(WEB_ROOT + "/home.html");
+				String response = template.replace("${file_count}", fileCount);
+				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
+				return;
 			}
 
 			try {
@@ -148,10 +165,8 @@ class HttpRequest implements Runnable {
 
 			String filePath;
 			if (fileName.startsWith("/files/")) {
-				// Files from upload directory
 				filePath = UPLOAD_DIR + fileName.substring("/files".length());
 			} else {
-				// Regular files from web root
 				filePath = WEB_ROOT + fileName;
 			}
 
@@ -172,6 +187,19 @@ class HttpRequest implements Runnable {
 	}
 
 	void processPostUpload() {
+		File uploadDir = new File(UPLOAD_DIR);
+		int currentFiles = HTTP.countFilesInDirectory(uploadDir);
+		int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+
+		if (currentFiles >= maxFiles) {
+			String errorMessage = "Maximum file limit reached (" + maxFiles + " files). Cannot upload more files.";
+			String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
+			String response = template.replace("${error_message}", errorMessage)
+					.replace("${file_count}", currentFiles + "/" + maxFiles);
+			HTTP.sendHttpStringResponse(sOut, "403 Forbidden", "text/html", response);
+			return;
+		}
+
 		String line, boundary, filename, filePath;
 		int done, readNow, len;
 		String cDisp = "Content-Disposition: form-data; name=\"filename\"; filename=\"";
@@ -179,7 +207,6 @@ class HttpRequest implements Runnable {
 		FileOutputStream fOut;
 		byte[] data = new byte[300];
 
-		File uploadDir = new File(UPLOAD_DIR);
 		if (!uploadDir.exists()) {
 			uploadDir.mkdirs();
 		}
@@ -247,11 +274,18 @@ class HttpRequest implements Runnable {
 			} while (len > 0);
 			fOut.close();
 			line = HTTP.readLineCRLF(sIn);
+
+			// Update file count after successful upload
+			currentFiles = HTTP.countFilesInDirectory(uploadDir);
+			String fileCount = currentFiles + "/" + maxFiles;
+
 			String template = HTTP.readHtmlFile(WEB_ROOT + "/upload-success.html");
-			HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", template);
+			String response = template.replace("${file_count}", fileCount);
+			HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 
 		} catch (IOException ex) {
-			System.out.println("IOException");
+			System.out.println("IOException during file upload: " + ex.getMessage());
+			replyPostError("Error during file upload: " + ex.getMessage());
 		}
 	}
 
@@ -267,7 +301,13 @@ class HttpRequest implements Runnable {
 		String template = HTTP.readHtmlFile(WEB_ROOT + "/file-list.html");
 		File uploadDir = new File(UPLOAD_DIR);
 		String fileListItems = HTTP.generateFileListItems(uploadDir);
-		String response = template.replace("${file_list_items}", fileListItems);
+
+		int currentFiles = HTTP.countFilesInDirectory(uploadDir);
+		int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+		String fileCount = currentFiles + "/" + maxFiles;
+
+		String response = template.replace("${file_list_items}", fileListItems)
+				.replace("${file_count}", fileCount);
 		HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 	}
 

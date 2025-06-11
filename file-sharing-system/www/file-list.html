@@ -107,12 +107,23 @@
 		</style>
 	</head>
 	<body>
-		<header>
-			<h1>
+		<header style="position: relative">
+			<h1 style="text-align: center; margin: 0">
 				<a href="/" style="color: white; text-decoration: none"
 					>File Sharing System</a
 				>
 			</h1>
+			<div
+				style="
+					position: absolute;
+					right: 20px;
+					top: 50%;
+					transform: translateY(-50%);
+					color: white;
+				"
+			>
+				Files: ${file_count}
+			</div>
 		</header>
 
 		<div class="container">
