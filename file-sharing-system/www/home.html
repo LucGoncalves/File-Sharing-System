@@ -131,16 +131,44 @@
 					enctype="multipart/form-data"
 					method="POST"
 					action="upload"
+					id="uploadForm"
 				>
 					<label>Select a file to upload:</label>
 					<input
 						type="file"
 						name="filename"
+						id="fileInput"
 						required
 						accept=".pdf,.txt,.gif,.png,application/pdf,text/plain,image/gif,image/png"
 					/>
-					<input type="submit" value="Upload File" />
+					<input type="submit" id="uploadButton" value="Upload File" />
 				</form>
+
+				<script>
+					// Verifica o status do upload ao carregar a página
+					document.addEventListener("DOMContentLoaded", function () {
+						const fileCountElement = document.querySelector("header div");
+						if (fileCountElement) {
+							const fileCountText = fileCountElement.textContent.trim();
+							const matches = fileCountText.match(/(\d+)\/(\d+)/);
+
+							if (matches && matches.length === 3) {
+								const currentFiles = parseInt(matches[1]);
+								const maxFiles = parseInt(matches[2]);
+
+								if (currentFiles >= maxFiles) {
+									document.getElementById("fileInput").disabled = true;
+									document.getElementById("uploadButton").disabled = true;
+									document.getElementById(
+										"uploadButton"
+									).style.backgroundColor = "#cccccc";
+									document.getElementById("uploadButton").style.cursor =
+										"not-allowed";
+								}
+							}
+						}
+					});
+				</script>
 
 				<form name="list" enctype="text/plain" method="POST" action="list">
 					<label>&nbsp;</label>

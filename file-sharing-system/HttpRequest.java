@@ -150,9 +150,13 @@ class HttpRequest implements Runnable {
 				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
 				int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
 				String fileCount = currentFiles + "/" + maxFiles;
+				boolean uploadDisabled = currentFiles >= maxFiles;
 
 				String template = HTTP.readHtmlFile(WEB_ROOT + "/home.html");
-				String response = template.replace("${file_count}", fileCount);
+				String response = template.replace("${file_count}", fileCount)
+						.replace("${upload_disabled_attribute}", uploadDisabled ? "disabled" : "")
+						.replace("${upload_style}",
+								uploadDisabled ? "style='background-color: #cccccc; cursor: not-allowed;'" : "");
 				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 				return;
 			}
