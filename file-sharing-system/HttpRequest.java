@@ -133,8 +133,11 @@ class HttpRequest implements Runnable {
 			} while (line.length() > 0);
 
 			String fileName = req.split(" ")[1];
-			if (fileName.equals("/")) {
-				fileName = "/index.html";
+			if (fileName.equals("/") || fileName.equals("/index.html")) {
+				String template = HTTP.readHtmlFile(WEB_ROOT + "/index.html");
+				String response = template.replace("${error_message}", "");
+				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
+				return;
 			}
 
 			try {
