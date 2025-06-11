@@ -14,14 +14,14 @@ class HTTP {
 			while (true) {
 				int bytesRead = sIn.read(line, p, 1);
 				if (bytesRead == -1) {
-					return null; // Conexão foi fechada
+					return null;
 				}
 				if (line[p] == '\n') {
 					return (new String(line, 0, p));
 				} else if (line[p] != '\r') {
 					p++;
 					if (p >= line.length) {
-						return null; // Linha muito longa
+						return null;
 					}
 				}
 			}

@@ -38,7 +38,6 @@ class HttpRequest implements Runnable {
 
 	void processGet(String req) {
 		try {
-			// Ler cabeçalhos
 			String line;
 			do {
 				line = HTTP.readLineCRLF(sIn);
@@ -51,7 +50,6 @@ class HttpRequest implements Runnable {
 				fileName = "/index.html";
 			}
 
-			// Decodificar URL (para lidar com caracteres especiais)
 			fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
 
 			String filePath = baseFolder + fileName;
@@ -75,7 +73,7 @@ class HttpRequest implements Runnable {
 		String uploadDirPath = baseFolder + "/files";
 		File uploadDir = new File(uploadDirPath);
 		if (!uploadDir.exists()) {
-			uploadDir.mkdirs(); // cria a pasta se não existir
+			uploadDir.mkdirs();
 		}
 
 		len = 0;
@@ -116,7 +114,6 @@ class HttpRequest implements Runnable {
 
 		try {
 			if (filename.length() == 0) {
-				// descarta o conteúdo e dá erro
 				do {
 					done = sIn.read(data, 0, 300);
 					len = len - done;
