@@ -65,6 +65,25 @@ class HTTP {
 	}
 
 	static void sendHttpFileResponse(DataOutputStream sOut, String status, String filePath) {
+		String[] allowedExtensions = { ".pdf", ".txt", ".gif", ".png" };
+
+		boolean isAllowed = false;
+		for (String ext : allowedExtensions) {
+			if (filePath.toLowerCase().endsWith(ext)) {
+				isAllowed = true;
+				break;
+			}
+		}
+
+		if (!isAllowed) {
+			sendHttpStringResponse(
+					sOut,
+					"403 Forbidden",
+					"text/html",
+					"<html><body><h1>403 Forbidden</h1><p>File type not allowed.</p></body></html>");
+			return;
+		}
+
 		String responseStatus = "200 Ok";
 		String contentType = "text/html";
 		File f;
@@ -82,8 +101,6 @@ class HTTP {
 		}
 		if (filePath.endsWith(".pdf"))
 			contentType = "application/pdf";
-		else if (filePath.endsWith(".js"))
-			contentType = "application/javascript";
 		else if (filePath.endsWith(".txt"))
 			contentType = "text/plain";
 		else if (filePath.endsWith(".gif"))

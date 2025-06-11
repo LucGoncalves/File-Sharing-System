@@ -6,11 +6,12 @@ class HttpRequest implements Runnable {
 	private Socket s;
 	private DataOutputStream sOut;
 	private DataInputStream sIn;
-	private String baseFolder;
+	private static final String BASE_FOLDER = "/var/www/rcomp";
+	private static final String UPLOAD_DIR = BASE_FOLDER + "/files";
+	private static final String WEB_ROOT = BASE_FOLDER + "/www"; // For HTML files
 
-	public HttpRequest(Socket cli_s, String folder) {
+	public HttpRequest(Socket cli_s) {
 		s = cli_s;
-		baseFolder = folder;
 	}
 
 	public void run() {
@@ -77,11 +78,34 @@ class HttpRequest implements Runnable {
 				System.out.println("Error decoding URL: " + e.getMessage());
 			}
 
-			String filePath = baseFolder + fileName;
+			String filePath;
+			if (fileName.startsWith("/files/")) {
+				// Files from upload directory
+				filePath = UPLOAD_DIR + fileName.substring("/files".length());
+			} else {
+				// Regular files from web root
+				filePath = WEB_ROOT + fileName;
+			}
+
 			File f = new File(filePath);
 			if (!f.exists() || !f.isFile()) {
 				HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
 						"<html><body><h1>404 File not found</h1></body></html>");
+				return;
+			}
+
+			String[] allowedExtensions = { ".pdf", ".txt", ".gif", ".png" };
+			boolean isAllowed = false;
+			for (String ext : allowedExtensions) {
+				if (filePath.toLowerCase().endsWith(ext)) {
+					isAllowed = true;
+					break;
+				}
+			}
+
+			if (!isAllowed) {
+				HTTP.sendHttpStringResponse(sOut, "403 Forbidden", "text/html",
+						"<html><body><h1>403 Forbidden</h1><p>File type not allowed.</p></body></html>");
 				return;
 			}
 
@@ -102,8 +126,7 @@ class HttpRequest implements Runnable {
 		FileOutputStream fOut;
 		byte[] data = new byte[300];
 
-		String uploadDirPath = baseFolder + "/files";
-		File uploadDir = new File(uploadDirPath);
+		File uploadDir = new File(UPLOAD_DIR);
 		if (!uploadDir.exists()) {
 			uploadDir.mkdirs();
 		}
@@ -154,7 +177,7 @@ class HttpRequest implements Runnable {
 				return;
 			}
 
-			filePath = uploadDirPath + "/" + filename;
+			filePath = UPLOAD_DIR + "/" + filename;
 			f = new File(filePath);
 			fOut = new FileOutputStream(f);
 
@@ -171,7 +194,7 @@ class HttpRequest implements Runnable {
 			} while (len > 0);
 			fOut.close();
 			line = HTTP.readLineCRLF(sIn);
-			String template = HTTP.readHtmlFile(baseFolder + "/upload-success.html");
+			String template = HTTP.readHtmlFile(WEB_ROOT + "/upload-success.html");
 			HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", template);
 
 		} catch (IOException ex) {
@@ -188,15 +211,15 @@ class HttpRequest implements Runnable {
 	}
 
 	void replyPostList() {
-		String template = HTTP.readHtmlFile(baseFolder + "/file-list.html");
-		File uploadDir = new File(baseFolder + "/files");
+		String template = HTTP.readHtmlFile(WEB_ROOT + "/file-list.html");
+		File uploadDir = new File(UPLOAD_DIR);
 		String fileListItems = HTTP.generateFileListItems(uploadDir);
 		String response = template.replace("${file_list_items}", fileListItems);
 		HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 	}
 
 	void replyPostError(String error) {
-		String template = HTTP.readHtmlFile(baseFolder + "/error.html");
+		String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
 		String response = template.replace("${error_message}", error);
 		HTTP.sendHttpStringResponse(sOut, "500 Internal Server Error", "text/html", response);
 	}

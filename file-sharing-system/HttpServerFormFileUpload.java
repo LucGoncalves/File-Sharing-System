@@ -2,7 +2,6 @@ import java.io.*;
 import java.net.*;
 
 class HttpServerFormFileUpload {
-	static private final String BASE_FOLDER = "www";
 	static private ServerSocket sock;
 
 	public static void main(String args[]) throws Exception {
@@ -14,11 +13,12 @@ class HttpServerFormFileUpload {
 		try {
 			sock = new ServerSocket(Integer.parseInt(args[0]));
 			System.out.println("Server started on port " + args[0]);
+			System.out.println("Client HTTP applications can connect to http://10.9.23.64:" + args[0]);
 
 			while (true) {
 				try {
 					Socket cliSock = sock.accept();
-					new Thread(new HttpRequest(cliSock, BASE_FOLDER)).start();
+					new Thread(new HttpRequest(cliSock)).start();
 				} catch (IOException ex) {
 					System.out.println("Error accepting connection: " + ex.getMessage());
 				}
