@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<title>Upload Successful</title>
+		<title>File Upload Server</title>
 		<style>
 			* {
 				box-sizing: border-box;
@@ -15,9 +15,6 @@
 				background-color: #f0f2f5;
 				color: #333;
 				line-height: 1.6;
-				min-height: 100vh;
-				display: flex;
-				flex-direction: column;
 			}
 
 			header {
@@ -44,31 +41,36 @@
 				padding: 30px;
 				border-radius: 10px;
 				box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-				text-align: center;
 			}
 
 			h1 {
 				font-size: 24px;
-				margin-bottom: 20px;
+				margin-bottom: 10px;
 				color: #0077cc;
+				text-align: center;
 			}
 
-			.success-icon {
-				font-size: 60px;
-				color: #4caf50;
-				margin-bottom: 20px;
+			h3 {
+				font-weight: normal;
+				margin-bottom: 30px;
+				color: #666;
+				text-align: center;
 			}
 
-			.actions {
+			form {
 				display: flex;
-				justify-content: center;
+				flex-direction: column;
 				gap: 20px;
-				margin-top: 30px;
-				flex-wrap: wrap;
 			}
 
-			.button,
-			.actions button {
+			input[type="file"] {
+				padding: 10px;
+				border: 1px solid #ccc;
+				border-radius: 5px;
+			}
+
+			input[type="submit"],
+			button {
 				padding: 10px 20px;
 				background-color: #0077cc;
 				color: white;
@@ -76,18 +78,20 @@
 				border-radius: 5px;
 				cursor: pointer;
 				font-weight: bold;
-				text-decoration: none;
 				transition: background-color 0.3s;
-				font-size: 1em; /* Added for consistent text size */
-				height: 40px; /* Added for consistent height */
-				display: inline-flex; /* Added for better alignment */
-				align-items: center; /* Added for better alignment */
-				justify-content: center; /* Added for better alignment */
+				height: 40px;
 			}
 
-			.button:hover,
-			.actions button:hover {
+			input[type="submit"]:hover,
+			button:hover {
 				background-color: #005fa3;
+			}
+
+			.actions {
+				display: flex;
+				justify-content: space-between;
+				gap: 20px;
+				flex-wrap: wrap;
 			}
 
 			@media (max-width: 480px) {
@@ -103,14 +107,29 @@
 		</header>
 
 		<div class="container">
-			<div class="success-icon">&#10004;</div>
-			<h1>File Uploaded Successfully!</h1>
-			<p>Your file has been successfully uploaded to the server.</p>
+			<h1>File Sharing System</h1>
+			<h3>Upload or view shared files</h3>
 
 			<div class="actions">
-				<a href="/home.html" class="button">Back to Home</a>
+				<form
+					name="upload"
+					enctype="multipart/form-data"
+					method="POST"
+					action="upload"
+				>
+					<label>Select a file to upload:</label>
+					<input
+						type="file"
+						name="filename"
+						required
+						accept=".pdf,.txt,.gif,.png,application/pdf,text/plain,image/gif,image/png"
+					/>
+					<input type="submit" value="Upload File" />
+				</form>
+
 				<form name="list" enctype="text/plain" method="POST" action="list">
-					<button type="submit">View All Files</button>
+					<label>&nbsp;</label>
+					<button type="submit">List Uploaded Files</button>
 				</form>
 			</div>
 		</div>

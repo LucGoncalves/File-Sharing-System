@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<title>File Upload Server</title>
+		<title>Login - File Sharing System</title>
 		<style>
 			* {
 				box-sizing: border-box;
@@ -15,6 +15,9 @@
 				background-color: #f0f2f5;
 				color: #333;
 				line-height: 1.6;
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
 			}
 
 			header {
@@ -35,7 +38,7 @@
 			}
 
 			.container {
-				max-width: 600px;
+				max-width: 400px;
 				margin: 30px auto;
 				background: white;
 				padding: 30px;
@@ -45,59 +48,50 @@
 
 			h1 {
 				font-size: 24px;
-				margin-bottom: 10px;
+				margin-bottom: 20px;
 				color: #0077cc;
 				text-align: center;
 			}
 
-			h3 {
-				font-weight: normal;
-				margin-bottom: 30px;
-				color: #666;
-				text-align: center;
+			.form-group {
+				margin-bottom: 20px;
 			}
 
-			form {
-				display: flex;
-				flex-direction: column;
-				gap: 20px;
+			label {
+				display: block;
+				margin-bottom: 5px;
+				font-weight: bold;
 			}
 
-			input[type="file"] {
+			input[type="text"],
+			input[type="password"] {
+				width: 100%;
 				padding: 10px;
 				border: 1px solid #ccc;
 				border-radius: 5px;
+				font-size: 16px;
 			}
 
-			input[type="submit"],
-			button {
-				padding: 10px 20px;
+			input[type="submit"] {
+				width: 100%;
+				padding: 10px;
 				background-color: #0077cc;
 				color: white;
 				border: none;
 				border-radius: 5px;
 				cursor: pointer;
+				font-size: 16px;
 				font-weight: bold;
-				transition: background-color 0.3s;
-				height: 40px;
 			}
 
-			input[type="submit"]:hover,
-			button:hover {
+			input[type="submit"]:hover {
 				background-color: #005fa3;
 			}
 
-			.actions {
-				display: flex;
-				justify-content: space-between;
-				gap: 20px;
-				flex-wrap: wrap;
-			}
-
-			@media (max-width: 480px) {
-				.actions {
-					flex-direction: column;
-				}
+			.error-message {
+				color: #d9534f;
+				margin-top: 10px;
+				text-align: center;
 			}
 		</style>
 	</head>
@@ -107,31 +101,19 @@
 		</header>
 
 		<div class="container">
-			<h1>File Sharing System</h1>
-			<h3>Upload or view shared files</h3>
-
-			<div class="actions">
-				<form
-					name="upload"
-					enctype="multipart/form-data"
-					method="POST"
-					action="upload"
-				>
-					<label>Select a file to upload:</label>
-					<input
-						type="file"
-						name="filename"
-						required
-						accept=".pdf,.txt,.gif,.png,application/pdf,text/plain,image/gif,image/png"
-					/>
-					<input type="submit" value="Upload File" />
-				</form>
-
-				<form name="list" enctype="text/plain" method="POST" action="list">
-					<label>&nbsp;</label>
-					<button type="submit">List Uploaded Files</button>
-				</form>
-			</div>
+			<h1>Login</h1>
+			<form method="POST" action="/home">
+				<div class="form-group">
+					<label for="username">Username:</label>
+					<input type="text" id="username" name="username" required />
+				</div>
+				<div class="form-group">
+					<label for="password">Password:</label>
+					<input type="password" id="password" name="password" required />
+				</div>
+				<input type="submit" value="Login" />
+				${error_message}
+			</form>
 		</div>
 	</body>
 </html>

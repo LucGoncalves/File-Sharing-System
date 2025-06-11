@@ -65,75 +65,44 @@ class HTTP {
 	}
 
 	static void sendHttpFileResponse(DataOutputStream sOut, String status, String filePath) {
-		String[] allowedExtensions = { ".pdf", ".txt", ".gif", ".png" };
-
-		boolean isAllowed = false;
-		for (String ext : allowedExtensions) {
-			if (filePath.toLowerCase().endsWith(ext)) {
-				isAllowed = true;
-				break;
-			}
-		}
-
-		if (!isAllowed) {
-			sendHttpStringResponse(
-					sOut,
-					"403 Forbidden",
-					"text/html",
-					"<html><body><h1>403 Forbidden</h1><p>File type not allowed.</p></body></html>");
-			return;
-		}
-
 		String responseStatus = "200 Ok";
-		String contentType = "text/html";
-		File f;
+		String contentType = "application/octet-stream"; // Tipo padrão
 
-		if (filePath.endsWith(".css"))
-			contentType = "text/css";
-		else if (filePath.endsWith(".json"))
-			contentType = "application/json";
-
-		f = new File(filePath);
+		File f = new File(filePath);
 		if (!f.exists()) {
-			sendHttpStringResponse(sOut, "404 Not Found", contentType,
+			sendHttpStringResponse(sOut, "404 Not Found", "text/html",
 					"<html><body><h1>404 File not found</h1></body></html>");
 			return;
 		}
-		if (filePath.endsWith(".pdf"))
-			contentType = "application/pdf";
-		else if (filePath.endsWith(".txt"))
-			contentType = "text/plain";
-		else if (filePath.endsWith(".gif"))
-			contentType = "image/gif";
-		else if (filePath.endsWith(".png"))
-			contentType = "image/png";
 
-		if (status != null)
+		// Determinar o tipo MIME correto baseado na extensão do arquivo
+		if (filePath.endsWith(".pdf")) {
+			contentType = "application/pdf";
+		} else if (filePath.endsWith(".txt")) {
+			contentType = "text/plain";
+		} else if (filePath.endsWith(".gif")) {
+			contentType = "image/gif";
+		} else if (filePath.endsWith(".png")) {
+			contentType = "image/png";
+		} else if (filePath.endsWith(".html") || filePath.endsWith(".htm")) {
+			contentType = "text/html";
+		}
+
+		if (status != null) {
 			responseStatus = status;
+		}
 
 		int len = (int) f.length();
 		sendHttpResponseHeader(sOut, responseStatus, contentType, len);
-		byte[] data = new byte[300];
-		int done, readNow;
-		InputStream fReader;
-		try {
-			fReader = new BufferedInputStream(new FileInputStream(f));
-			do {
-				if (len > 300)
-					readNow = 300;
-				else
-					readNow = (int) len;
-				try {
-					done = fReader.read(data, 0, readNow);
-					len = len - done;
-					sOut.write(data, 0, done);
-				} catch (IOException ex) {
-					System.out.println("IOException");
-				}
-			} while (len > 0);
 
-		} catch (FileNotFoundException ex) {
-			System.out.println("FILE OPEN FileNotFoundException");
+		try (InputStream fReader = new BufferedInputStream(new FileInputStream(f))) {
+			byte[] buffer = new byte[4096];
+			int bytesRead;
+			while ((bytesRead = fReader.read(buffer)) != -1) {
+				sOut.write(buffer, 0, bytesRead);
+			}
+		} catch (IOException ex) {
+			System.out.println("Error sending file: " + ex.getMessage());
 		}
 	}
 

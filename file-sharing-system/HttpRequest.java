@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Properties;
 
 class HttpRequest implements Runnable {
 	private Socket s;
@@ -8,7 +9,16 @@ class HttpRequest implements Runnable {
 	private DataInputStream sIn;
 	private static final String BASE_FOLDER = "/var/www/rcomp";
 	private static final String UPLOAD_DIR = BASE_FOLDER + "/files";
-	private static final String WEB_ROOT = BASE_FOLDER + "/www"; // For HTML files
+	private static final String WEB_ROOT = BASE_FOLDER + "/www";
+	private static final Properties config = new Properties();
+
+	static {
+		try {
+			config.load(new FileInputStream(BASE_FOLDER + "/config.properties"));
+		} catch (IOException e) {
+			System.out.println("Error loading config.properties: " + e.getMessage());
+		}
+	}
 
 	public HttpRequest(Socket cli_s) {
 		s = cli_s;
@@ -35,7 +45,9 @@ class HttpRequest implements Runnable {
 				return;
 			}
 
-			if (request.startsWith("POST /upload")) {
+			if (request.startsWith("POST /home")) {
+				processPostLogin();
+			} else if (request.startsWith("POST /upload")) {
 				processPostUpload();
 			} else if (request.startsWith("POST /list")) {
 				processPostList();
@@ -52,6 +64,59 @@ class HttpRequest implements Runnable {
 			} catch (IOException ex) {
 				System.out.println("CLOSE IOException: " + ex.getMessage());
 			}
+		}
+	}
+
+	void processPostLogin() {
+		try {
+			// Read headers
+			int contentLength = 0;
+			String line;
+			do {
+				line = HTTP.readLineCRLF(sIn);
+				if (line.startsWith("Content-Length: ")) {
+					contentLength = Integer.parseInt(line.substring("Content-Length: ".length()));
+				}
+			} while (line.length() > 0);
+
+			// Read POST data
+			byte[] postData = new byte[contentLength];
+			sIn.readFully(postData);
+			String postString = new String(postData, StandardCharsets.UTF_8);
+
+			// Parse username and password
+			String[] params = postString.split("&");
+			String username = "";
+			String password = "";
+			for (String param : params) {
+				String[] keyValue = param.split("=");
+				if (keyValue.length == 2) {
+					if (keyValue[0].equals("username")) {
+						username = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name());
+					} else if (keyValue[0].equals("password")) {
+						password = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8.name());
+					}
+				}
+			}
+
+			// Validate credentials
+			String validUsername = config.getProperty("auth.username");
+			String validPassword = config.getProperty("auth.password");
+
+			if (username.equals(validUsername) && password.equals(validPassword)) {
+				// Successful login - send main page
+				HTTP.sendHttpFileResponse(sOut, "200 Ok", WEB_ROOT + "/home.html");
+			} else {
+				// Failed login - show error
+				String template = HTTP.readHtmlFile(WEB_ROOT + "/index.html");
+				String errorMessage = "<div class=\"error-message\">Invalid username or password</div>";
+				String response = template.replace("${error_message}", errorMessage);
+				HTTP.sendHttpStringResponse(sOut, "401 Unauthorized", "text/html", response);
+			}
+		} catch (Exception ex) {
+			System.out.println("Error in processPostLogin: " + ex.getMessage());
+			HTTP.sendHttpStringResponse(sOut, "500 Internal Server Error", "text/html",
+					"<html><body><h1>500 Server Error</h1></body></html>");
 		}
 	}
 
@@ -91,21 +156,6 @@ class HttpRequest implements Runnable {
 			if (!f.exists() || !f.isFile()) {
 				HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
 						"<html><body><h1>404 File not found</h1></body></html>");
-				return;
-			}
-
-			String[] allowedExtensions = { ".pdf", ".txt", ".gif", ".png" };
-			boolean isAllowed = false;
-			for (String ext : allowedExtensions) {
-				if (filePath.toLowerCase().endsWith(ext)) {
-					isAllowed = true;
-					break;
-				}
-			}
-
-			if (!isAllowed) {
-				HTTP.sendHttpStringResponse(sOut, "403 Forbidden", "text/html",
-						"<html><body><h1>403 Forbidden</h1><p>File type not allowed.</p></body></html>");
 				return;
 			}
 
