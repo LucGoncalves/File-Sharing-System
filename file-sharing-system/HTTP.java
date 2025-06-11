@@ -8,23 +8,25 @@ class HTTP {
 	static private final String HTTP_CRLF = "\r\n";
 
 	static String readLineCRLF(DataInputStream sIn) {
+		if (sIn == null) {
+			return null;
+		}
+
 		byte[] line = new byte[300];
 		int p = 0;
 		try {
-			while (true) {
+			while (p < line.length) {
 				int bytesRead = sIn.read(line, p, 1);
 				if (bytesRead == -1) {
-					return null;
+					return p > 0 ? new String(line, 0, p) : null;
 				}
 				if (line[p] == '\n') {
-					return (new String(line, 0, p));
+					return new String(line, 0, p);
 				} else if (line[p] != '\r') {
 					p++;
-					if (p >= line.length) {
-						return null;
-					}
 				}
 			}
+			return new String(line, 0, p);
 		} catch (IOException ex) {
 			System.out.println("READ IOException: " + ex.getMessage());
 			return null;

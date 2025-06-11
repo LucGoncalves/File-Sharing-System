@@ -1,7 +1,6 @@
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.net.URLDecoder;
 
 class HttpRequest implements Runnable {
 	private Socket s;
@@ -19,20 +18,39 @@ class HttpRequest implements Runnable {
 			sOut = new DataOutputStream(s.getOutputStream());
 			sIn = new DataInputStream(s.getInputStream());
 		} catch (IOException ex) {
-			System.out.println("Data Stream IOException");
+			System.out.println("Data Stream IOException: " + ex.getMessage());
+			try {
+				s.close();
+			} catch (IOException e) {
+			}
+			return;
 		}
-		String request = HTTP.readLineCRLF(sIn);
-		if (request.startsWith("POST /upload"))
-			processPostUpload();
-		else if (request.startsWith("POST /list"))
-			processPostList();
-		else
-			processGet(request);
 
 		try {
-			s.close();
-		} catch (IOException ex) {
-			System.out.println("CLOSE IOException");
+			String request = HTTP.readLineCRLF(sIn);
+			if (request == null || request.isEmpty()) {
+				HTTP.sendHttpStringResponse(sOut, "400 Bad Request", "text/html",
+						"<html><body><h1>400 Bad Request</h1></body></html>");
+				return;
+			}
+
+			if (request.startsWith("POST /upload")) {
+				processPostUpload();
+			} else if (request.startsWith("POST /list")) {
+				processPostList();
+			} else {
+				processGet(request);
+			}
+		} catch (Exception ex) {
+			System.out.println("Error processing request: " + ex.getMessage());
+			HTTP.sendHttpStringResponse(sOut, "500 Internal Server Error", "text/html",
+					"<html><body><h1>500 Server Error</h1></body></html>");
+		} finally {
+			try {
+				s.close();
+			} catch (IOException ex) {
+				System.out.println("CLOSE IOException: " + ex.getMessage());
+			}
 		}
 	}
 
@@ -41,8 +59,11 @@ class HttpRequest implements Runnable {
 			String line;
 			do {
 				line = HTTP.readLineCRLF(sIn);
-				if (line == null)
+				if (line == null) {
+					HTTP.sendHttpStringResponse(sOut, "400 Bad Request", "text/html",
+							"<html><body><h1>400 Bad Request</h1></body></html>");
 					return;
+				}
 			} while (line.length() > 0);
 
 			String fileName = req.split(" ")[1];
@@ -50,15 +71,26 @@ class HttpRequest implements Runnable {
 				fileName = "/index.html";
 			}
 
-			fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
+			try {
+				fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
+			} catch (Exception e) {
+				System.out.println("Error decoding URL: " + e.getMessage());
+			}
 
 			String filePath = baseFolder + fileName;
+			File f = new File(filePath);
+			if (!f.exists() || !f.isFile()) {
+				HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
+						"<html><body><h1>404 File not found</h1></body></html>");
+				return;
+			}
+
 			HTTP.sendHttpFileResponse(sOut, null, filePath);
 
 		} catch (Exception ex) {
 			System.out.println("Error in processGet: " + ex.getMessage());
-			HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
-					"<html><body><h1>404 File not found</h1></body></html>");
+			HTTP.sendHttpStringResponse(sOut, "500 Internal Server Error", "text/html",
+					"<html><body><h1>500 Server Error</h1></body></html>");
 		}
 	}
 
