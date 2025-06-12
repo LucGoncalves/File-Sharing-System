@@ -128,12 +128,19 @@ class HTTP {
 				if (f.isFile()) {
 					String encodedName = URLEncoder.encode(f.getName(), StandardCharsets.UTF_8)
 							.replace("+", "%20");
-					items.append("<li>")
+					items.append("<li style=\"margin-bottom: 10px; display: flex; align-items: center;\">")
+							.append("<div style=\"flex-grow: 1;\">")
 							.append("<a class=\"file-link\" href=\"/files/").append(encodedName).append("\">")
 							.append(f.getName()).append("</a>")
-							.append("<span class=\"file-size\"> (")
+							.append("<span class=\"file-size\" style=\"margin-left: 10px;\">(")
 							.append(formatFileSize(f.length()))
 							.append(")</span>")
+							.append("</div>")
+							.append("<form method=\"POST\" action=\"/delete\" style=\"margin-left: 10px;\">")
+							.append("<input type=\"hidden\" name=\"filename\" value=\"").append(encodedName)
+							.append("\">")
+							.append("<button type=\"submit\" class=\"delete-button\">Delete</button>")
+							.append("</form>")
 							.append("</li>");
 				}
 			}
