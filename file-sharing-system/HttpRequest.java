@@ -11,6 +11,7 @@ class HttpRequest implements Runnable {
 	private static final String UPLOAD_DIR = BASE_FOLDER + "/files";
 	private static final String WEB_ROOT = BASE_FOLDER + "/www";
 	private static final Properties config = new Properties();
+	private final int maxFiles;
 
 	static {
 		try {
@@ -20,8 +21,9 @@ class HttpRequest implements Runnable {
 		}
 	}
 
-	public HttpRequest(Socket cli_s) {
+	public HttpRequest(Socket cli_s, int maxFiles) {
 		s = cli_s;
+		this.maxFiles = maxFiles;
 	}
 
 	public void run() {
@@ -109,7 +111,7 @@ class HttpRequest implements Runnable {
 				// Successful login - send main page with file count
 				File uploadDir = new File(UPLOAD_DIR);
 				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
-				int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+				int maxFiles = this.maxFiles;
 				String fileCount = currentFiles + "/" + maxFiles;
 
 				String template = HTTP.readHtmlFile(WEB_ROOT + "/home.html");
@@ -150,7 +152,7 @@ class HttpRequest implements Runnable {
 			} else if (fileName.equals("/home.html")) {
 				File uploadDir = new File(UPLOAD_DIR);
 				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
-				int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+				int maxFiles = this.maxFiles;
 				String fileCount = currentFiles + "/" + maxFiles;
 				boolean uploadDisabled = currentFiles >= maxFiles;
 
@@ -195,8 +197,7 @@ class HttpRequest implements Runnable {
 	void processPostUpload() {
 		File uploadDir = new File(UPLOAD_DIR);
 		int currentFiles = HTTP.countFilesInDirectory(uploadDir);
-		int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
-
+		int maxFiles = this.maxFiles;
 		if (currentFiles >= maxFiles) {
 			String errorMessage = "Maximum file limit reached (" + maxFiles + " files). Cannot upload more files.";
 			String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
@@ -309,7 +310,7 @@ class HttpRequest implements Runnable {
 		String fileListItems = HTTP.generateFileListItems(uploadDir);
 
 		int currentFiles = HTTP.countFilesInDirectory(uploadDir);
-		int maxFiles = Integer.parseInt(config.getProperty("max.files", "10"));
+		int maxFiles = this.maxFiles;
 		String fileCount = currentFiles + "/" + maxFiles;
 
 		String response = template.replace("${file_list_items}", fileListItems)
