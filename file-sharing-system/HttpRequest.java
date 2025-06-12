@@ -53,8 +53,6 @@ class HttpRequest implements Runnable {
 				processPostUpload();
 			} else if (request.startsWith("POST /list")) {
 				processPostList();
-			} else if (request.startsWith("POST /delete")) {
-				processPostDelete();
 			} else {
 				processGet(request);
 			}
@@ -322,47 +320,5 @@ class HttpRequest implements Runnable {
 		String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
 		String response = template.replace("${error_message}", error);
 		HTTP.sendHttpStringResponse(sOut, "500 Internal Server Error", "text/html", response);
-	}
-
-	void processPostDelete() {
-		try {
-			// Read headers
-			int contentLength = 0;
-			String line;
-			do {
-				line = HTTP.readLineCRLF(sIn);
-				if (line.startsWith("Content-Length: ")) {
-					contentLength = Integer.parseInt(line.substring("Content-Length: ".length()));
-				}
-			} while (line.length() > 0);
-
-			// Read POST data
-			byte[] postData = new byte[contentLength];
-			sIn.readFully(postData);
-			String postString = new String(postData, StandardCharsets.UTF_8);
-
-			// Parse filename
-			String[] params = postString.split("=");
-			String filename = params.length > 1 ? URLDecoder.decode(params[1], StandardCharsets.UTF_8.name()) : "";
-
-			if (!filename.isEmpty()) {
-				File fileToDelete = new File(UPLOAD_DIR + "/" + filename);
-				if (fileToDelete.exists()) {
-					if (fileToDelete.delete()) {
-						// File deleted successfully - redirect to file list
-						replyPostList();
-					} else {
-						replyPostError("Failed to delete file");
-					}
-				} else {
-					replyPostError("File not found");
-				}
-			} else {
-				replyPostError("No filename specified");
-			}
-		} catch (Exception ex) {
-			System.out.println("Error in processPostDelete: " + ex.getMessage());
-			replyPostError("Error deleting file: " + ex.getMessage());
-		}
 	}
 }

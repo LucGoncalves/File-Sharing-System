@@ -135,12 +135,6 @@ class HTTP {
 							.append("<span class=\"file-size\" style=\"margin-left: 10px;\">(")
 							.append(formatFileSize(f.length()))
 							.append(")</span>")
-							.append("</div>")
-							.append("<form method=\"POST\" action=\"/delete\" style=\"margin-left: 10px;\">")
-							.append("<input type=\"hidden\" name=\"filename\" value=\"").append(encodedName)
-							.append("\">")
-							.append("<button type=\"submit\" class=\"delete-button\">Delete</button>")
-							.append("</form>")
 							.append("</li>");
 				}
 			}
