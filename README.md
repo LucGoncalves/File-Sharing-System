@@ -173,7 +173,7 @@ http://10.9.23.64:9990/
 
 * ✅ 5.3.1 Files Server authentication and slot listing.
 * ✅ 5.3.2 Client implemented in Java.
-* ⚠ 5.3.4 File upload (Implemented as extra feature - not mandatory for 1-person team).
+* ☑️ 5.3.4 File upload (Implemented as extra feature - not mandatory for 1-person team).
 
 ---
 
