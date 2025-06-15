@@ -3,16 +3,19 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
+// Classe que trata cada pedido HTTP do cliente
 class HttpRequest implements Runnable {
 	private Socket s;
 	private DataOutputStream sOut;
 	private DataInputStream sIn;
+	// Diretórios base para os ficheiros e páginas web
 	private static final String BASE_FOLDER = "/var/www/rcomp";
 	private static final String UPLOAD_DIR = BASE_FOLDER + "/files";
 	private static final String WEB_ROOT = BASE_FOLDER + "/www";
 	private static final Properties config = new Properties();
 	private final int maxFiles;
 
+	// Carrega as configurações do ficheiro properties ao iniciar a classe
 	static {
 		try {
 			config.load(new FileInputStream(BASE_FOLDER + "/config.properties"));
@@ -21,11 +24,13 @@ class HttpRequest implements Runnable {
 		}
 	}
 
+	// Construtor recebe o socket do cliente e o número máximo de ficheiros
 	public HttpRequest(Socket cli_s, int maxFiles) {
 		s = cli_s;
 		this.maxFiles = maxFiles;
 	}
 
+	// Método principal que trata o pedido do cliente
 	public void run() {
 		try {
 			sOut = new DataOutputStream(s.getOutputStream());
@@ -40,13 +45,16 @@ class HttpRequest implements Runnable {
 		}
 
 		try {
+			// Lê a primeira linha do pedido HTTP
 			String request = HTTP.readLineCRLF(sIn);
 			if (request == null || request.isEmpty()) {
+				// Pedido inválido
 				HTTP.sendHttpStringResponse(sOut, "400 Bad Request", "text/html",
 						"<html><body><h1>400 Bad Request</h1></body></html>");
 				return;
 			}
 
+			// Verifica o tipo de pedido e chama o método correspondente
 			if (request.startsWith("POST /home")) {
 				processPostLogin();
 			} else if (request.startsWith("POST /upload")) {
@@ -69,9 +77,10 @@ class HttpRequest implements Runnable {
 		}
 	}
 
+	// Processa o login do utilizador
 	void processPostLogin() {
 		try {
-			// Read headers
+			// Lê os cabeçalhos do pedido
 			int contentLength = 0;
 			String line;
 			do {
@@ -81,12 +90,12 @@ class HttpRequest implements Runnable {
 				}
 			} while (line.length() > 0);
 
-			// Read POST data
+			// Lê os dados do POST (username e password)
 			byte[] postData = new byte[contentLength];
 			sIn.readFully(postData);
 			String postString = new String(postData, StandardCharsets.UTF_8);
 
-			// Parse username and password
+			// Separa os parâmetros do formulário
 			String[] params = postString.split("&");
 			String username = "";
 			String password = "";
@@ -101,12 +110,12 @@ class HttpRequest implements Runnable {
 				}
 			}
 
-			// Validate credentials
+			// Valida as credenciais com as do ficheiro de configuração
 			String validUsername = config.getProperty("auth.username");
 			String validPassword = config.getProperty("auth.password");
 
 			if (username.equals(validUsername) && password.equals(validPassword)) {
-				// Successful login - send main page with file count
+				// Login com sucesso - mostra página principal com contagem de ficheiros
 				File uploadDir = new File(UPLOAD_DIR);
 				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
 				int maxFiles = this.maxFiles;
@@ -116,7 +125,7 @@ class HttpRequest implements Runnable {
 				String response = template.replace("${file_count}", fileCount);
 				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 			} else {
-				// Failed login - show error
+				// Login falhado - mostra mensagem de erro
 				String template = HTTP.readHtmlFile(WEB_ROOT + "/index.html");
 				String errorMessage = "<div class=\"error-message\">Invalid username or password</div>";
 				String response = template.replace("${error_message}", errorMessage);
@@ -129,8 +138,10 @@ class HttpRequest implements Runnable {
 		}
 	}
 
+	// Processa pedidos GET (ex: páginas HTML ou ficheiros)
 	void processGet(String req) {
 		try {
+			// Lê os cabeçalhos do pedido
 			String line;
 			do {
 				line = HTTP.readLineCRLF(sIn);
@@ -141,13 +152,16 @@ class HttpRequest implements Runnable {
 				}
 			} while (line.length() > 0);
 
+			// Extrai o nome do ficheiro pedido
 			String fileName = req.split(" ")[1];
 			if (fileName.equals("/") || fileName.equals("/index.html")) {
+				// Página inicial
 				String template = HTTP.readHtmlFile(WEB_ROOT + "/index.html");
 				String response = template.replace("${error_message}", "");
 				HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 				return;
 			} else if (fileName.equals("/home.html")) {
+				// Página principal após login
 				File uploadDir = new File(UPLOAD_DIR);
 				int currentFiles = HTTP.countFilesInDirectory(uploadDir);
 				int maxFiles = this.maxFiles;
@@ -163,12 +177,14 @@ class HttpRequest implements Runnable {
 				return;
 			}
 
+			// Decodifica o nome do ficheiro (caso tenha espaços ou caracteres especiais)
 			try {
 				fileName = URLDecoder.decode(fileName, StandardCharsets.UTF_8.name());
 			} catch (Exception e) {
 				System.out.println("Error decoding URL: " + e.getMessage());
 			}
 
+			// Determina o caminho completo do ficheiro pedido
 			String filePath;
 			if (fileName.startsWith("/files/")) {
 				filePath = UPLOAD_DIR + fileName.substring("/files".length());
@@ -178,11 +194,13 @@ class HttpRequest implements Runnable {
 
 			File f = new File(filePath);
 			if (!f.exists() || !f.isFile()) {
+				// Ficheiro não encontrado
 				HTTP.sendHttpStringResponse(sOut, "404 Not Found", "text/html",
 						"<html><body><h1>404 File not found</h1></body></html>");
 				return;
 			}
 
+			// Envia o ficheiro ao cliente
 			HTTP.sendHttpFileResponse(sOut, null, filePath);
 
 		} catch (Exception ex) {
@@ -192,10 +210,12 @@ class HttpRequest implements Runnable {
 		}
 	}
 
+	// Processa o upload de ficheiros enviados pelo utilizador
 	void processPostUpload() {
 		File uploadDir = new File(UPLOAD_DIR);
 		int currentFiles = HTTP.countFilesInDirectory(uploadDir);
 		int maxFiles = this.maxFiles;
+		// Verifica se já atingiu o limite de ficheiros
 		if (currentFiles >= maxFiles) {
 			String errorMessage = "Maximum file limit reached (" + maxFiles + " files). Cannot upload more files.";
 			String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
@@ -212,12 +232,14 @@ class HttpRequest implements Runnable {
 		FileOutputStream fOut;
 		byte[] data = new byte[300];
 
+		// Cria o diretório de uploads se não existir
 		if (!uploadDir.exists()) {
 			uploadDir.mkdirs();
 		}
 
 		len = 0;
 		boundary = null;
+		// Lê os cabeçalhos do pedido para obter o tamanho e boundary
 		do {
 			line = HTTP.readLineCRLF(sIn);
 			if (line.startsWith("Content-Length: ")) {
@@ -227,6 +249,7 @@ class HttpRequest implements Runnable {
 			}
 		} while (line.length() > 0);
 
+		// Verifica se recebeu os dados necessários
 		if (len == 0) {
 			replyPostError("Content-Length: expected and not found");
 			return;
@@ -236,6 +259,7 @@ class HttpRequest implements Runnable {
 			return;
 		}
 
+		// Lê a linha do separador multipart
 		line = HTTP.readLineCRLF(sIn);
 		if (!line.endsWith(boundary)) {
 			replyPostError("Multipart separator expected and not found");
@@ -243,6 +267,7 @@ class HttpRequest implements Runnable {
 		}
 		len = len - line.length() - 2;
 		filename = "";
+		// Procura o nome do ficheiro no cabeçalho Content-Disposition
 		do {
 			line = HTTP.readLineCRLF(sIn);
 			len = len - line.length() - 2;
@@ -253,6 +278,7 @@ class HttpRequest implements Runnable {
 		} while (line.length() > 0);
 
 		try {
+			// Se não houver nome de ficheiro, ignora o conteúdo
 			if (filename.length() == 0) {
 				do {
 					done = sIn.read(data, 0, 300);
@@ -262,12 +288,15 @@ class HttpRequest implements Runnable {
 				return;
 			}
 
+			// Caminho completo para guardar o ficheiro
 			filePath = UPLOAD_DIR + "/" + filename;
 			f = new File(filePath);
 			fOut = new FileOutputStream(f);
 
+			// Ajusta o tamanho a ler (retira o tamanho do boundary final)
 			len = len - boundary.length() - 6;
 
+			// Lê e grava o ficheiro em blocos
 			do {
 				if (len > 300)
 					readNow = 300;
@@ -280,7 +309,7 @@ class HttpRequest implements Runnable {
 			fOut.close();
 			line = HTTP.readLineCRLF(sIn);
 
-			// Update file count after successful upload
+			// Atualiza a contagem de ficheiros após upload
 			currentFiles = HTTP.countFilesInDirectory(uploadDir);
 			String fileCount = currentFiles + "/" + maxFiles;
 
@@ -294,6 +323,7 @@ class HttpRequest implements Runnable {
 		}
 	}
 
+	// Processa o pedido para listar ficheiros
 	void processPostList() {
 		String line;
 		do {
@@ -302,6 +332,7 @@ class HttpRequest implements Runnable {
 		replyPostList();
 	}
 
+	// Gera e envia a página HTML com a lista de ficheiros
 	void replyPostList() {
 		String template = HTTP.readHtmlFile(WEB_ROOT + "/file-list.html");
 		File uploadDir = new File(UPLOAD_DIR);
@@ -316,6 +347,7 @@ class HttpRequest implements Runnable {
 		HTTP.sendHttpStringResponse(sOut, "200 Ok", "text/html", response);
 	}
 
+	// Envia uma página de erro ao cliente
 	void replyPostError(String error) {
 		String template = HTTP.readHtmlFile(WEB_ROOT + "/error.html");
 		String response = template.replace("${error_message}", error);
